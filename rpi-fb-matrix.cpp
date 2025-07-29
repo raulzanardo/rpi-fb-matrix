@@ -162,6 +162,12 @@ int main(int argc, char **argv) {
 
     // based on original code from
     // http://www.roard.com/docs/cookbook/cbsu19.html
+    r_modifier = GetColorComponentModifier(attribs.visual->red_mask);
+    g_modifier = GetColorComponentModifier(attribs.visual->green_mask);
+    b_modifier = GetColorComponentModifier(attribs.visual->blue_mask);
+
+    // based on original code from
+    // http://www.roard.com/docs/cookbook/cbsu19.html
 
     while (running) {
       // Capture the current display image.
@@ -170,6 +176,18 @@ int main(int argc, char **argv) {
       for (int y = 0; y < config.getDisplayHeight(); ++y) {
         for (int x = 0; x < config.getDisplayWidth(); ++x) {
 
+          color.pixel = XGetPixel(img, x+x_offset, y+y_offset);
+          color_channel[0] =
+              ((color.pixel >> b_modifier.shift) & ((1 << b_modifier.bits) - 1))
+              << (8 - b_modifier.bits);
+          color_channel[1] =
+              ((color.pixel >> g_modifier.shift) & ((1 << g_modifier.bits) - 1))
+              << (8 - g_modifier.bits);
+          color_channel[2] =
+              ((color.pixel >> r_modifier.shift) & ((1 << r_modifier.bits) - 1))
+              << (8 - r_modifier.bits);
+          canvas->SetPixel(x + x_offset, y + y_offset, color_channel[2],
+                           color_channel[1], color_channel[0]);
           // displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green,
           // &blue); canvas->SetPixel(x, y, red, green, blue);
         }
