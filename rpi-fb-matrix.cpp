@@ -122,6 +122,22 @@ int main(int argc, char **argv) {
     }
     canvas->Clear();
 
+    Display *display;
+    char *dpy_name = std::getenv("DISPLAY");
+
+    if (!dpy_name) {
+      fprintf(stderr, "No DISPLAY set\n");
+      return 1;
+    }
+
+    fprintf(stdout, "DISPLAY is %s:\n", dpy_name);
+
+    display = XOpenDisplay(dpy_name);
+    if (display == NULL) {
+      fprintf(stderr, "Display %s cannot be found, exiting", dpy_name);
+      return 1;
+    }
+
     // Initialize BCM functions and display capture class.
     // bcm_host_init();
     // BCMDisplayCapture displayCapture(capture_width, capture_height);
@@ -129,6 +145,24 @@ int main(int argc, char **argv) {
     // Loop forever waiting for Ctrl-C signal to quit.
     signal(SIGINT, sigintHandler);
     cout << "Press Ctrl-C to quit..." << endl;
+
+    FrameCanvas *offscreen_canvas = matrix->CreateFrameCanvas();
+    XColor color;
+    int screen = XDefaultScreen(display);
+    XWindowAttributes attribs;
+    Window window = XRootWindow(display, screen);
+    XImage *img;
+    ColorComponentModifier r_modifier, g_modifier, b_modifier;
+    unsigned char color_channel[3];
+
+    XGetWindowAttributes(display, window, &attribs);
+
+    // based on original code from
+    // http://www.roard.com/docs/cookbook/cbsu19.html
+    r_modifier = GetColorComponentModifier(attribs.visual->red_mask);
+    g_modifier = GetColorComponentModifier(attribs.visual->green_mask);
+    b_modifier = GetColorComponentModifier(attribs.visual->blue_mask);
+
     while (running) {
       // Capture the current display image.
       // displayCapture.capture();
@@ -136,6 +170,23 @@ int main(int argc, char **argv) {
       for (int y = 0; y < config.getDisplayHeight(); ++y) {
         for (int x = 0; x < config.getDisplayWidth(); ++x) {
           uint8_t red, green, blue;
+
+          img = XGetImage(display, window, x, y, width, height, AllPlanes,
+                          XYPixmap);
+
+          color.pixel = XGetPixel(img, xPixel, yPixel);
+          color_channel[0] =
+              ((color.pixel >> b_modifier.shift) & ((1 << b_modifier.bits) - 1))
+              << (8 - b_modifier.bits);
+          color_channel[1] =
+              ((color.pixel >> g_modifier.shift) & ((1 << g_modifier.bits) - 1))
+              << (8 - g_modifier.bits);
+          color_channel[2] =
+              ((color.pixel >> r_modifier.shift) & ((1 << r_modifier.bits) - 1))
+              << (8 - r_modifier.bits);
+          canvas->SetPixel(xPixel, yPixel, color_channel[2], color_channel[1],
+                           color_channel[0]);
+
           // displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green,
           // &blue); canvas->SetPixel(x, y, red, green, blue);
         }
