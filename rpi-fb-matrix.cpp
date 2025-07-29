@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
-
+// BCM specific libraries.
 #include <fcntl.h>
 #include <led-matrix.h>
 
@@ -14,7 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 
-
+// X11 libraries for screen capture.
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -29,7 +29,7 @@ using namespace rgb_matrix;
 // pressed, then the main loop will cleanly exit.
 volatile bool running = true;
 
-
+// SIGINT handler to cleanly exit the program.
 static void sigintHandler(int s) {
   running = false;
 }
@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
     // Create canvas and apply GridTransformer.
     RGBMatrix *canvas = CreateMatrixFromOptions(matrix_options, runtime_options);
     if (config.hasTransformer()) {
-      canvas->ApplyStaticTransformer(config.getGridTransformer());
+      canvas->SetTransformer(new GridTransformer(config.getGridTransformer()));
     }
     canvas->Clear();
 
