@@ -31,7 +31,7 @@ struct ColorComponentModifier {
 
 // Make sure we can exit gracefully when Ctrl-C is pressed.
 volatile bool interrupt_received = false;
-static void InterruptHandler(int signo) { interrupt_received = true; }
+
 
 ColorComponentModifier GetColorComponentModifier(unsigned long mask) {
   ColorComponentModifier color_component_modifier;
