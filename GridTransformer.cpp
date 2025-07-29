@@ -13,7 +13,6 @@ GridTransformer::GridTransformer(int width, int height, int panel_width, int pan
   _panel_width(panel_width),
   _panel_height(panel_height),
   _chain_length(chain_length),
-  _source(NULL),
   _panels(panels)
 {
   // Display width must be a multiple of the panel pixel column count.
@@ -27,9 +26,11 @@ GridTransformer::GridTransformer(int width, int height, int panel_width, int pan
   assert((_rows * _cols) == (int)_panels.size());
 }
 
-void GridTransformer::SetPixel(int x, int y, uint8_t red, uint8_t green, uint8_t blue) {
-  assert(_source != NULL);
+void GridTransformer::MapVisibleToMatrix(int matrix_width, int matrix_height,
+                                         int x, int y, int *matrix_x, int *matrix_y) const {
   if ((x < 0) || (y < 0) || (x >= _width) || (y >= _height)) {
+    *matrix_x = -1;
+    *matrix_y = -1;
     return;
   }
 
@@ -41,26 +42,26 @@ void GridTransformer::SetPixel(int x, int y, uint8_t red, uint8_t green, uint8_t
   Panel panel = _panels[_cols*row + col];
 
   // Compute location of the pixel within the panel.
-  x = x % _panel_width;
-  y = y % _panel_height;
+  int panel_x = x % _panel_width;
+  int panel_y = y % _panel_height;
 
   // Perform any panel rotation to the pixel.
   // NOTE: 90 and 270 degree rotation only possible on 32 row (square) panels.
   if (panel.rotate == 90) {
     assert(_panel_height == _panel_width);
-    int old_x = x;
-    x = (_panel_height-1)-y;
-    y = old_x;
+    int old_x = panel_x;
+    panel_x = (_panel_height-1)-panel_y;
+    panel_y = old_x;
   }
   else if (panel.rotate == 180) {
-    x = (_panel_width-1)-x;
-    y = (_panel_height-1)-y;
+    panel_x = (_panel_width-1)-panel_x;
+    panel_y = (_panel_height-1)-panel_y;
   }
   else if (panel.rotate == 270) {
     assert(_panel_height == _panel_width);
-    int old_y = y;
-    y = (_panel_width-1)-x;
-    x = old_y;
+    int old_y = panel_y;
+    panel_y = (_panel_width-1)-panel_x;
+    panel_x = old_y;
   }
 
   // Determine x offset into the source panel based on its order along the chain.
@@ -69,19 +70,9 @@ void GridTransformer::SetPixel(int x, int y, uint8_t red, uint8_t green, uint8_t
   // ordering begins for this transformer).
   int x_offset = ((_chain_length-1)-panel.order)*_panel_width;
 
-  // Determine y offset into the source panel based on its parrallel chain value.
+  // Determine y offset into the source panel based on its parallel chain value.
   int y_offset = panel.parallel*_panel_height;
 
-  _source->SetPixel(x_offset + x,
-                    y_offset + y,
-                    red, green, blue);
-}
-
-Canvas* GridTransformer::Transform(Canvas* source) {
-  assert(source != NULL);
-  int swidth = source->width();
-  int sheight = source->height();
-  assert((_width * _height) == (swidth * sheight));
-  _source = source;
-  return this;
+  *matrix_x = x_offset + panel_x;
+  *matrix_y = y_offset + panel_y;
 }
