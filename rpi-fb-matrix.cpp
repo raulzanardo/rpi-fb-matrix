@@ -1,6 +1,6 @@
 // -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
-// Program to copy the contents of the Raspberry Pi primary display to LED matrices.
-// Author: Tony DiCola
+// Program to copy the contents of the Raspberry Pi primary display to LED
+// matrices. Author: Tony DiCola
 #include <iostream>
 #include <stdexcept>
 
@@ -24,33 +24,62 @@
 using namespace std;
 using namespace rgb_matrix;
 
+struct ColorComponentModifier {
+  unsigned long shift;
+  unsigned long bits;
+};
+
+// Make sure we can exit gracefully when Ctrl-C is pressed.
+volatile bool interrupt_received = false;
+static void InterruptHandler(int signo) { interrupt_received = true; }
+
+ColorComponentModifier GetColorComponentModifier(unsigned long mask) {
+  ColorComponentModifier color_component_modifier;
+
+  color_component_modifier.shift = 0;
+  color_component_modifier.bits = 0;
+
+  while (!(mask & 1)) {
+    color_component_modifier.shift++;
+    mask >>= 1;
+  }
+  while (mask & 1) {
+    color_component_modifier.bits++;
+    mask >>= 1;
+  }
+  if (color_component_modifier.bits > 8) {
+    color_component_modifier.shift += color_component_modifier.bits - 8;
+    color_component_modifier.bits = 8;
+  }
+
+  return color_component_modifier;
+}
+
 // Global to keep track of if the program should run.
 // Will be set false by a SIGINT handler when ctrl-c is
 // pressed, then the main loop will cleanly exit.
 volatile bool running = true;
 
 // SIGINT handler to cleanly exit the program.
-static void sigintHandler(int s) {
-  running = false;
+static void sigintHandler(int s) { running = false; }
+
+static void usage(const char *progname) {
+  std::cerr << "Usage: " << progname << " [flags] [config-file]" << std::endl;
+  std::cerr << "Flags:" << std::endl;
+  rgb_matrix::RGBMatrix::Options matrix_options;
+  rgb_matrix::RuntimeOptions runtime_options;
+  runtime_options.drop_privileges = -1; // Need root
+  rgb_matrix::PrintMatrixFlags(stderr, matrix_options, runtime_options);
 }
 
-static void usage(const char* progname) {
-    std::cerr << "Usage: " << progname << " [flags] [config-file]" << std::endl;
-    std::cerr << "Flags:" << std::endl;
-    rgb_matrix::RGBMatrix::Options matrix_options;
-    rgb_matrix::RuntimeOptions runtime_options;
-    runtime_options.drop_privileges = -1;  // Need root
-    rgb_matrix::PrintMatrixFlags(stderr, matrix_options, runtime_options);
-}
-
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   try {
     // Initialize from flags.
     rgb_matrix::RGBMatrix::Options matrix_options;
     rgb_matrix::RuntimeOptions runtime_options;
-    runtime_options.drop_privileges = -1;  // Need root
-    if (!rgb_matrix::ParseOptionsFromFlags(&argc, &argv,
-                                           &matrix_options, &runtime_options)) {
+    runtime_options.drop_privileges = -1; // Need root
+    if (!rgb_matrix::ParseOptionsFromFlags(&argc, &argv, &matrix_options,
+                                           &runtime_options)) {
       usage(argv[0]);
       return 1;
     }
@@ -65,48 +94,50 @@ int main(int argc, char** argv) {
          << " chain_length: " << config.getChainLength() << endl
          << " parallel_count: " << config.getParallelCount() << endl;
 
-    // Set screen capture state depending on if a crop region is specified or not.
-    // When not cropped grab the entire screen and resize it down to the LED display.
-    // However when cropping is enabled instead grab the entire screen (by
-    // setting the capture_width and capture_height to -1) and specify an offset
-    // to the start of the crop rectangle.
+    // Set screen capture state depending on if a crop region is specified or
+    // not. When not cropped grab the entire screen and resize it down to the
+    // LED display. However when cropping is enabled instead grab the entire
+    // screen (by setting the capture_width and capture_height to -1) and
+    // specify an offset to the start of the crop rectangle.
     int capture_width = config.getDisplayWidth();
     int capture_height = config.getDisplayHeight();
     int x_offset = 0;
     int y_offset = 0;
     if (config.hasCropOrigin()) {
-      cout << " crop_origin: (" << config.getCropX() << ", " << config.getCropY() << ")" << endl;
+      cout << " crop_origin: (" << config.getCropX() << ", "
+           << config.getCropY() << ")" << endl;
       capture_width = -1;
       capture_height = -1;
       x_offset = config.getCropX();
       y_offset = config.getCropY();
     }
 
-
     // Initialize matrix library.
     // Create canvas and apply GridTransformer.
-    RGBMatrix *canvas = CreateMatrixFromOptions(matrix_options, runtime_options);
+    RGBMatrix *canvas =
+        CreateMatrixFromOptions(matrix_options, runtime_options);
     if (config.hasTransformer()) {
-      canvas->ApplyPixelMapper(new GridTransformer(config.getGridTransformer()));
+      canvas->ApplyPixelMapper(
+          new GridTransformer(config.getGridTransformer()));
     }
     canvas->Clear();
 
     // Initialize BCM functions and display capture class.
-    //bcm_host_init();
-    //BCMDisplayCapture displayCapture(capture_width, capture_height);
+    // bcm_host_init();
+    // BCMDisplayCapture displayCapture(capture_width, capture_height);
 
     // Loop forever waiting for Ctrl-C signal to quit.
     signal(SIGINT, sigintHandler);
     cout << "Press Ctrl-C to quit..." << endl;
     while (running) {
       // Capture the current display image.
-      //displayCapture.capture();
+      // displayCapture.capture();
       // Loop through the frame data and set the pixels on the matrix canvas.
-      for (int y=0; y<config.getDisplayHeight(); ++y) {
-        for (int x=0; x<config.getDisplayWidth(); ++x) {
+      for (int y = 0; y < config.getDisplayHeight(); ++y) {
+        for (int x = 0; x < config.getDisplayWidth(); ++x) {
           uint8_t red, green, blue;
-          //displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green, &blue);
-          //canvas->SetPixel(x, y, red, green, blue);
+          // displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green,
+          // &blue); canvas->SetPixel(x, y, red, green, blue);
         }
       }
       // Sleep for 25 milliseconds (40Hz refresh)
@@ -114,8 +145,7 @@ int main(int argc, char** argv) {
     }
     canvas->Clear();
     delete canvas;
-  }
-  catch (const exception& ex) {
+  } catch (const exception &ex) {
     cerr << ex.what() << endl;
     usage(argv[0]);
     return -1;
