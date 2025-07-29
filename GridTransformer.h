@@ -24,6 +24,15 @@ public:
   virtual ~GridTransformer() {}
 
   // PixelMapper interface implementation:
+  virtual const char *GetName() const { return "GridTransformer"; }
+  
+  virtual bool GetSizeMapping(int matrix_width, int matrix_height,
+                              int *visible_width, int *visible_height) const {
+    *visible_width = _width;
+    *visible_height = _height;
+    return true;
+  }
+  
   virtual void MapVisibleToMatrix(int matrix_width, int matrix_height,
                                   int visible_x, int visible_y, 
                                   int *matrix_x, int *matrix_y) const;
