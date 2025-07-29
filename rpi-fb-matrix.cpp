@@ -160,16 +160,25 @@ int main(int argc, char **argv) {
     // based on original code from
     // http://www.roard.com/docs/cookbook/cbsu19.html
 
-
     while (running) {
       // Capture the current display image.
       // displayCapture.capture();
       // Loop through the frame data and set the pixels on the matrix canvas.
       for (int y = 0; y < config.getDisplayHeight(); ++y) {
         for (int x = 0; x < config.getDisplayWidth(); ++x) {
-          uint8_t red, green, blue;
 
+          color.pixel = XGetPixel(img, x, y);
 
+          color_channel[0] =
+              ((color.pixel >> b_modifier.shift) & ((1 << b_modifier.bits) - 1))
+              << (8 - b_modifier.bits);
+          color_channel[1] =
+              ((color.pixel >> g_modifier.shift) & ((1 << g_modifier.bits) - 1))
+              << (8 - g_modifier.bits);
+          color_channel[2] =
+              ((color.pixel >> r_modifier.shift) & ((1 << r_modifier.bits) - 1))
+              << (8 - r_modifier.bits);
+          canvas->SetPixel(x, y, color_channel[2], color_channel[1], color_channel[0]);
           // displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green,
           // &blue); canvas->SetPixel(x, y, red, green, blue);
         }
