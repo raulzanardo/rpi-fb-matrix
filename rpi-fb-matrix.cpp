@@ -31,7 +31,7 @@ struct ColorComponentModifier {
 
 // Make sure we can exit gracefully when Ctrl-C is pressed.
 volatile bool interrupt_received = false;
-
+static void InterruptHandler(int signo) { interrupt_received = true; }
 
 ColorComponentModifier GetColorComponentModifier(unsigned long mask) {
   ColorComponentModifier color_component_modifier;
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, sigintHandler);
     cout << "Press Ctrl-C to quit..." << endl;
 
-    
+    FrameCanvas *offscreen_canvas = canvas->CreateFrameCanvas();
     XColor color;
     int screen = XDefaultScreen(display);
     XWindowAttributes attribs;
@@ -156,6 +156,9 @@ int main(int argc, char **argv) {
     unsigned char color_channel[3];
 
     XGetWindowAttributes(display, window, &attribs);
+
+    img = XGetImage(display, window, x_offset, y_offset, capture_width,
+                    capture_height, AllPlanes, XYPixmap);
 
     // based on original code from
     // http://www.roard.com/docs/cookbook/cbsu19.html
@@ -167,19 +170,6 @@ int main(int argc, char **argv) {
       for (int y = 0; y < config.getDisplayHeight(); ++y) {
         for (int x = 0; x < config.getDisplayWidth(); ++x) {
 
-          color.pixel = XGetPixel(img, x, y);
-
-          color_channel[0] =
-              ((color.pixel >> b_modifier.shift) & ((1 << b_modifier.bits) - 1))
-              << (8 - b_modifier.bits);
-          color_channel[1] =
-              ((color.pixel >> g_modifier.shift) & ((1 << g_modifier.bits) - 1))
-              << (8 - g_modifier.bits);
-          color_channel[2] =
-              ((color.pixel >> r_modifier.shift) & ((1 << r_modifier.bits) - 1))
-              << (8 - r_modifier.bits);
-          canvas->SetPixel(x + x_offset, y + y_offset, color_channel[2],
-                           color_channel[1], color_channel[0]);
           // displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green,
           // &blue); canvas->SetPixel(x, y, red, green, blue);
         }
