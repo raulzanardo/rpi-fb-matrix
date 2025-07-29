@@ -178,7 +178,8 @@ int main(int argc, char **argv) {
           color_channel[2] =
               ((color.pixel >> r_modifier.shift) & ((1 << r_modifier.bits) - 1))
               << (8 - r_modifier.bits);
-          canvas->SetPixel(x, y, color_channel[2], color_channel[1], color_channel[0]);
+          canvas->SetPixel(x + x_offset, y + y_offset, color_channel[2],
+                           color_channel[1], color_channel[0]);
           // displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green,
           // &blue); canvas->SetPixel(x, y, red, green, blue);
         }
