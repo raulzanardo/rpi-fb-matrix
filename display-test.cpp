@@ -82,10 +82,10 @@ int main(int argc, char** argv) {
     int panel_rows = config.getParallelCount();
     int panel_columns = config.getChainLength();
     if (config.hasTransformer()) {
-      GridTransformer grid = config.getGridTransformer();
-      canvas->ApplyStaticTransformer(grid);
-      panel_rows = grid.getRows();
-      panel_columns = grid.getColumns();
+      GridTransformer *grid = new GridTransformer(config.getGridTransformer());
+      canvas->ApplyPixelMapper(grid);
+      panel_rows = grid->getRows();
+      panel_columns = grid->getColumns();
     }
 
     cout << " grid rows: " << panel_rows << endl
