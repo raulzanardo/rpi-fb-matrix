@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, sigintHandler);
     cout << "Press Ctrl-C to quit..." << endl;
 
-    FrameCanvas *offscreen_canvas = canvas->CreateFrameCanvas();
+    
     XColor color;
     int screen = XDefaultScreen(display);
     XWindowAttributes attribs;
