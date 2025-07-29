@@ -15,7 +15,7 @@ export USER_DEFINES=-DRGB_SLOWDOWN_GPIO=1
 # Configure compiler and libraries:
 CXX = g++
 CXXFLAGS = -Wall -std=c++11 -O3 -I. -I./rpi-rgb-led-matrix/include -I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host -I/opt/vc/include/interface/vmcs_host/linux -L./rpi-rgb-led-matrix/lib -L/opt/vc/lib
-LIBS = -lrgbmatrix -lrt -lm -lpthread -lbcm_host -lconfig++
+LIBS = -lrgbmatrix -lrt -lm -lpthread -lconfig++
 
 # Makefile rules:
 all: rpi-fb-matrix display-test
