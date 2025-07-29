@@ -10,7 +10,7 @@
 #include "led-matrix.h"
 
 
-class GridTransformer: public rgb_matrix::PixelMapper {
+class GridTransformer: public rgb_matrix::Canvas, public rgb_matrix::CanvasTransformer {
 public:
   struct Panel {
     int order;
@@ -22,9 +22,25 @@ public:
                   int chain_length, const std::vector<Panel>& panels);
   virtual ~GridTransformer() {}
 
-  // PixelMapper interface implementation:
-  virtual void MapVisibleToMatrix(int matrix_width, int matrix_height,
-                                  int x, int y, int *matrix_x, int *matrix_y) const;
+  // Canvas interface implementation:
+  virtual int width() const {
+    return _width;
+  }
+  virtual int height() const {
+    return _height;
+  }
+  virtual void Clear() {
+    assert(_source != NULL);
+    _source->Clear();
+  }
+  virtual void Fill(uint8_t red, uint8_t green, uint8_t blue) {
+    assert(_source != NULL);
+    _source->Fill(red, green, blue);
+  }
+  virtual void SetPixel(int x, int y, uint8_t red, uint8_t green, uint8_t blue);
+
+  // Transformer interface implementation:
+  virtual rgb_matrix::Canvas* Transform(rgb_matrix::Canvas* source);
 
   // Other attribute accessors.
   int getRows() const {
@@ -32,12 +48,6 @@ public:
   }
   int getColumns() const {
     return _cols;
-  }
-  int getWidth() const {
-    return _width;
-  }
-  int getHeight() const {
-    return _height;
   }
 
 private:
@@ -48,6 +58,7 @@ private:
       _chain_length,
       _rows,
       _cols;
+  rgb_matrix::Canvas* _source;
   std::vector<Panel> _panels;
 };
 
